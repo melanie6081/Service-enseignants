@@ -1,8 +1,14 @@
 package champollion;
 
+import java.security.Provider;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
 public class Enseignant extends Personne {
 
-    // TODO : rajouter les autres méthodes présentes dans le diagramme UML
+    private HashMap<UE, ServicePrevu> heuresParUE = new HashMap<>();
+    private ArrayList<Intervention> interventions = new ArrayList<>();
 
     public Enseignant(String nom, String email) {
         super(nom, email);
@@ -17,8 +23,11 @@ public class Enseignant extends Personne {
      *
      */
     public int heuresPrevues() {
-        // TODO: Implémenter cette méthode
-        throw new UnsupportedOperationException("Pas encore implémenté");
+        int heuresTotales = 0;
+        for ( Map.Entry<UE, ServicePrevu> u : heuresParUE.entrySet()){
+            heuresTotales = heuresTotales + heuresPrevuesPourUE(u.getKey());
+        }
+        return heuresTotales;
     }
 
     /**
@@ -31,8 +40,12 @@ public class Enseignant extends Personne {
      *
      */
     public int heuresPrevuesPourUE(UE ue) {
-        // TODO: Implémenter cette méthode
-        throw new UnsupportedOperationException("Pas encore implémenté");
+        int heures;
+        double heuresCM = heuresParUE.get(ue).getVolumeCM()*1.5;
+        double heuresTD = heuresParUE.get(ue).getVolumeTD();
+        double heuresTP = heuresParUE.get(ue).getVolumeCM()*0.75;
+        heures = (int) (heuresCM + heuresTD + heuresTP);
+        return heures;
     }
 
     /**
@@ -44,8 +57,66 @@ public class Enseignant extends Personne {
      * @param volumeTP le volume d'heures de TP
      */
     public void ajouteEnseignement(UE ue, int volumeCM, int volumeTD, int volumeTP) {
-        // TODO: Implémenter cette méthode
-        throw new UnsupportedOperationException("Pas encore implémenté");
+        int newVolumeCM;
+        int newVolumeTD;
+        int newVolumeTP;
+        if (heuresParUE.containsKey(ue)){
+                heuresParUE.replace(ue, new ServicePrevu(volumeCM + heuresParUE.get(ue).getVolumeCM(), volumeTD + heuresParUE.get(ue).getVolumeTD(), volumeTP+ heuresParUE.get(ue).getVolumeTP()));
+
+            } else {
+                heuresParUE.put(ue, new ServicePrevu(volumeCM,volumeTD,volumeTP));
+        }
+
     }
 
+    public void ajouteIntervention(Intervention inter){
+        interventions.add(inter);
+    }
+
+    public boolean enSousService(){
+        boolean sousService = false;
+        if (heuresPrevues()<192){
+            sousService = true;
+        }
+        return sousService;
+    }
+
+    public int resteAPlanifier(UE ue, TypeIntervention type){
+        int rest=0;
+
+        switch (type){
+            case CM:
+                rest = (int) (heuresParUE.get(ue).getVolumeCM()*1.5);
+                break;
+            case TD:
+                rest = (int) (heuresParUE.get(ue).getVolumeTD());
+                break;
+            case TP:
+                rest = (int) (heuresParUE.get(ue).getVolumeTP()*0.75);
+                break;
+        }
+
+        for (Intervention i : interventions){
+            if(!i.isAnnulee() && i.getType().equals(type)){
+                switch (i.getType()){
+                    case TP:
+                        rest = rest - (int) (i.getDuree()*0.75);
+                        break;
+                    case CM:
+                        rest = rest - (int) (i.getDuree()*1.5);
+                        break;
+                    case TD:
+                        rest = (rest - i.getDuree());
+                        break;
+
+                }
+                
+            }
+        }
+        return rest;
+    }
+
+    public ArrayList<Intervention> getInterventions() {
+        return interventions;
+    }
 }
